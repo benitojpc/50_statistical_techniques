@@ -40,7 +40,7 @@ impl SalaryRecord {
         };
     }
 
-    fn show( &self ) {
+    fn show_card( &self ) {
         println!( "{:>19}: {:>11}", "Work Year".to_string(), self.work_year );
         println!( "{:>19}: {:>11}", "Experience level".to_string(), self.work_year );
         println!( "{:>19}: {:>11}", "Employment type", self.employment_type );
@@ -53,6 +53,23 @@ impl SalaryRecord {
         println!( "{:>19}: {:>11}", "Company location", self.company_location );
         println!( "{:>19}: {:>11}", "Company size", self.company_size );
     }
+
+    fn header_list( ) {
+        let linea = format!( 
+            "| {:>9} | {:>14} | {:>15} | {:>14} | {:>10} | {:>14} | {:>14} | {:>18} | {:>12} | {:>16} | {:>10} | ", 
+            "Work Year", "Experience level", "Employment type", "Job title",  "Salary", "Salary Currency", "Salary in USD", "Employee residence","Remote ratio", "Company location", "Company size");
+        println!( "{}", linea );
+        let sub_line = format!("{:-<184}", " ");
+        println!( "{}", sub_line );
+    }
+
+    fn show_list( &self ) {
+        let linea = format!( 
+            "| {:>9} | {:>14}   | {:>15} | {:>14} | {:>10} | {:>14}  | {:>14} | {:>18} | {:>12} | {:>16} |   {:>10} | ", 
+            self.work_year , self.work_year, self.employment_type, self.job_title, self.salary, self.salary_currency, self.salary_in_usd, self.employee_residence, self.remote_ratio, self.company_location, self.company_size );
+        println!( "{}", linea );
+    }
+
 }
 
 fn fetch_dataset( url: &str ) -> Result<String, Box<dyn Error>> {
@@ -83,18 +100,22 @@ fn show_dataset ( regs : Vec<SalaryRecord>, nregs: Option<usize>, lista: bool ) 
     
     let mut primero : bool = true;
 
+    if lista == true {
+        SalaryRecord::header_list();
+    }
     for (i, reg)  in regs.iter().enumerate() {
         if i < num_regs {
             let record = reg;
-            if lista == true {
+            if lista == false {
                 if primero == true {
                     primero = false; 
                 } else {
                     println!("\n ===============================\n" ); 
                 }
-                record.show();
+                record.show_card();
             } else {
-                println!( "{:?}\n", reg );
+                //println!( "{:?}\n", reg );
+                record.show_list();
             }
         }
     }
