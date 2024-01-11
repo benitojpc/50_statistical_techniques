@@ -1,9 +1,4 @@
 use serde::Deserialize;
-use reqwest::blocking::get;
-use std::io::Read;
-
-use csv::ReaderBuilder;
-use std::error::Error;
 
 #[derive( Debug, Deserialize )]
 #[allow( dead_code )]
@@ -20,6 +15,12 @@ struct SalaryRecord {
     company_location: String,
     company_size: String,
 } 
+
+#[allow( dead_code )]
+struct WorkerSalary {
+    workers: Vec<SalaryRecord>,
+    regs_to_read: i32,
+}
 
 #[allow( dead_code )]
 impl SalaryRecord {
@@ -54,6 +55,13 @@ impl SalaryRecord {
         println!( "{:>19}: {:>11}", "Company size", self.company_size );
     }
 
+    fn show_list( &self ) {
+        let linea = format!( 
+            "| {:>9} | {:>14}   | {:>15} | {:>14} | {:>10} | {:>14}  | {:>14} | {:>18} | {:>12} | {:>16} |   {:>10} | ", 
+            self.work_year , self.work_year, self.employment_type, self.job_title, self.salary, self.salary_currency, self.salary_in_usd, self.employee_residence, self.remote_ratio, self.company_location, self.company_size );
+        println!( "{}", linea );
+    }
+
     fn header_list( ) {
         let linea = format!( 
             "| {:>9} | {:>14} | {:>15} | {:>14} | {:>10} | {:>14} | {:>14} | {:>18} | {:>12} | {:>16} | {:>10} | ", 
@@ -63,88 +71,68 @@ impl SalaryRecord {
         println!( "{}", sub_line );
     }
 
-    fn show_list( &self ) {
-        let linea = format!( 
-            "| {:>9} | {:>14}   | {:>15} | {:>14} | {:>10} | {:>14}  | {:>14} | {:>18} | {:>12} | {:>16} |   {:>10} | ", 
-            self.work_year , self.work_year, self.employment_type, self.job_title, self.salary, self.salary_currency, self.salary_in_usd, self.employee_residence, self.remote_ratio, self.company_location, self.company_size );
-        println!( "{}", linea );
-    }
-
 }
 
-fn fetch_dataset( url: &str ) -> Result<String, Box<dyn Error>> {
-    let mut response = get(url)?;
-    let mut content = String::new();
-    response.read_to_string( &mut content )?;
-    Ok( content )
-}
 
-fn load_dataset( csv_data: &str) -> Result<Vec<SalaryRecord>, Box<dyn Error>> {
-    let mut reader = ReaderBuilder::new().from_reader( csv_data.as_bytes() );
-    let mut records = Vec::new();
-  
-    for result in reader.deserialize().skip( 1 ) {   // skip row for column's name
-        let record: SalaryRecord = result?;
-        records.push( record );
+#[allow( dead_code )]
+impl WorkerSalary {
+    fn new( ) -> WorkerSalary {
+        return WorkerSalary{ workers: Vec::new(), regs_to_read: 0 };
     }
-    Ok( records )
-}
 
-fn show_dataset ( regs : Vec<SalaryRecord>, nregs: Option<usize>, lista: bool ) {
-    let num_regs;
-    match nregs {
-            Some( nregs ) => {num_regs = nregs;},
-            None  => {num_regs = regs.len();}
-    }
-    println!( "\n" );
-    
-    let mut primero : bool = true;
+    fn show_workers( &self ) {
+        let mut contador: i32 = 0;
 
-    if lista == true {
-        SalaryRecord::header_list();
-    }
-    for (i, reg)  in regs.iter().enumerate() {
-        if i < num_regs {
-            let record = reg;
-            if lista == false {
-                if primero == true {
-                    primero = false; 
-                } else {
-                    println!("\n ===============================\n" ); 
-                }
-                record.show_card();
-            } else {
-                //println!( "{:?}\n", reg );
-                record.show_list();
+        for record in self.workers.iter() {
+            if contador < self.regs_to_read {
+                println!( "{} {} {} {} {} {} {} {} {} {} {} ",
+                record.work_year,
+                record.experience_level,
+                record.employment_type,
+                record.job_title,
+                record.salary,
+                record.salary_currency,
+                record.salary_in_usd,
+                record.employee_residence,
+                record.remote_ratio,
+                record.company_location,
+                record.company_size);
+                contador += 1;
             }
         }
     }
+
+    #[allow(unused_variables)]
+    fn read_data( fpath : String, nregs: Option<i32> ) -> Result< WorkerSalary, Box<dyn std::error::Error> >  {
+        let ruta_file : String = String::from( fpath ) ; 
+        let fopen = std::fs::File::open( ruta_file )?;
+        let mut rdr = csv::Reader::from_reader( fopen );
+        
+        let mut wsalary : WorkerSalary = WorkerSalary::new();
+
+        for record in rdr.deserialize() {
+            let record : SalaryRecord = record?;
+            wsalary.workers.push( record );    
+        }
+
+        let regs = match nregs {
+            Some( regs ) => wsalary.regs_to_read = regs as i32,
+            None => wsalary.regs_to_read = wsalary.workers.len() as i32,
+        };
+
+        Ok( wsalary )
+    }
+
 }
 
 #[ allow( unused_assignments )]
 fn main() {
-    let url = "https://raw.githubusercontent.com/kittenpub/database-repository/main/ds_salaries.csv"; 
-    //let url = "csvs/salaries.csv";
-
-    let show_regs : usize = 4;
     
-    match fetch_dataset( url ) {  
-        Ok( csv_data ) => {  
-            let ds = load_dataset( &csv_data );
-            
-            match ds {  
-                Ok( dataset ) => {  
-                    println!( "Loaded {} records", dataset.len() );  
-                    show_dataset( dataset, Some(show_regs), true);
-                } 
-                Err( error ) => {  
-                    eprintln!( "Error loading dataset: {}", error );  
-                } 
-            } 
-        } 
-        Err( error) => {   
-            eprintln!( "Error fetching dataset: {}", error );  
-        } 
-    } 
-  
+    let path_to_file = "csvs/salaries.csv".to_string();
+    let show_regs : i32 = 4;
+
+    match WorkerSalary::read_data( path_to_file, Some(show_regs) ) {
+        Ok( wsalary) => { wsalary.show_workers();}
+        Err( _error ) => {println!( "Error al cargar datos en la clase"); }
+    }
 } 
