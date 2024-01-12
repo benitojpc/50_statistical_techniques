@@ -100,6 +100,7 @@ impl WorkerSalary {
                 contador += 1;
             }
         }
+
     }
 
     #[allow(unused_variables)]
@@ -123,16 +124,33 @@ impl WorkerSalary {
         Ok( wsalary )
     }
 
+    fn read_salaries( &self ) -> Vec::<f64> {
+        let mut salaries : Vec<f64> = Vec::new();
+        for record in self.workers.iter() {
+            salaries.push( record.salary );
+        }
+        return salaries;
+    }
+}
+
+fn calculate_median( data: Vec<f64> ) -> f64 {
+    let sum : f64 = data.iter().sum();
+    sum / data.len() as f64
 }
 
 #[ allow( unused_assignments )]
 fn main() {
     
+    let precision = 2;
     let path_to_file = "csvs/salaries.csv".to_string();
     let show_regs : i32 = 4;
 
     match WorkerSalary::read_data( path_to_file, Some(show_regs) ) {
-        Ok( wsalary) => { wsalary.show_workers();}
+        Ok( wsalary) => { 
+            //wsalary.show_workers();
+            println!( "Median of salaries: {:.1$}", calculate_median( wsalary.read_salaries() ), precision );
+        }
         Err( _error ) => {println!( "Error al cargar datos en la clase"); }
     }
+
 } 
